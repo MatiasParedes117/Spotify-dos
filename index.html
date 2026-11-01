@@ -3,346 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Clon visual e interactivo del reproductor web de Spotify. Proyecto académico — Taller de Programación, ULagos." />
-  <title>Spotify Clone 2.0</title>
+  <meta name="description" content="Inicio de Spotify Clone: recomendaciones, música destacada, playlists y artistas populares. Proyecto académico RA2, ULagos." />
+  <meta name="theme-color" content="#121212" />
+  <title>Inicio — Spotify Clone</title>
 
-  <!-- Fuentes -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet" />
 
-  <!-- Favicon Spotify verde -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231ed760'%3E%3Cpath d='M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z'/%3E%3C/svg%3E"/>
 
   <link rel="stylesheet" href="assets/css/tailwind.css" />
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 
-<body>
+<body data-page="home">
+  <a class="sp2-skip-link" href="#sp2-view">Saltar al contenido principal</a>
 
-<!-- ════════════════════════════════════════════════════════════════
-     APP SHELL
-════════════════════════════════════════════════════════════════ -->
-<div id="sp2-shell">
+  <div id="sp2-shell">
+    <header id="sp2-topbar"></header>
 
-  <!-- ══════════════════ TOPBAR ══════════════════ -->
-  <header id="sp2-topbar">
-
-    <!-- Logo -->
-    <a href="#/" class="sp2-logo-wrap" aria-label="Spotify Clone, ir al inicio" data-link="">
-      <span style="font-size:28px;color:#1ed760" id="sp2-icon-logo"></span>
-      <span class="sp2-logo-text">Spotify<span style="color:#1ed760">.</span></span>
-    </a>
-
-    <!-- Back / Forward -->
-    <button id="sp2-btn-back"  class="sp2-nav-btn ml-2" aria-label="Atrás"    title="Atrás"    disabled><span id="sp2-ico-back"></span></button>
-    <button id="sp2-btn-fwd"   class="sp2-nav-btn"      aria-label="Adelante" title="Adelante" disabled><span id="sp2-ico-fwd"></span></button>
-
-    <!-- Search bar -->
-    <div class="sp2-search-bar ml-2" style="flex:1;max-width:480px">
-      <span style="font-size:20px;color:#a7a7a7;flex-shrink:0" id="sp2-ico-search"></span>
-      <input id="sp2-header-search" type="search" autocomplete="off"
-        placeholder="¿Qué quieres escuchar?"
-        aria-label="Buscar en Spotify" />
-      <kbd style="font-size:10px;color:#a7a7a7;border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:2px 6px;flex-shrink:0;display:none" class="lg-only">Ctrl K</kbd>
+    <div id="sp2-main-area">
+      <aside id="sp2-sidebar" aria-label="Tu biblioteca y navegación"></aside>
+      <main id="sp2-main">
+        <div id="sp2-view" class="scroll-area" aria-live="polite"></div>
+      </main>
     </div>
 
-    <!-- Right: Premium + Install + Bell + Profile -->
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0">
-
-      <a href="#/premium" data-link="premium"
-        style="border:1px solid rgba(255,255,255,.35);border-radius:500px;padding:7px 16px;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;transition:border-color .15s"
-        onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,.35)'"
-        class="topbar-desktop">Explorar Premium</a>
-
-      <button class="sp2-tool-btn topbar-desktop" aria-label="Instalar app" title="Instalar app"><span id="sp2-ico-dl"></span></button>
-
-      <button class="sp2-tool-btn topbar-desktop" aria-label="Notificaciones" title="Notificaciones" style="position:relative">
-        <span id="sp2-ico-bell"></span>
-        <span style="position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#1ed760;ring:2px solid #0a0a0a"></span>
-      </button>
-
-      <!-- Profile -->
-      <div style="position:relative">
-        <button class="sp2-profile-btn" id="sp2-profile-btn" aria-label="Menú de perfil" aria-haspopup="true">
-          <span class="sp2-avatar">MP</span>
-          <span id="sp2-ico-chdown" class="topbar-desktop" style="font-size:16px;color:#a7a7a7"></span>
-        </button>
-        <div id="sp2-profile-menu" class="sp2-dropdown hidden">
-          <div style="padding:10px 14px 8px">
-            <p style="font-size:14px;font-weight:700;color:#fff">Matyaz Paredes</p>
-            <p id="sp2-profile-plan" style="font-size:12px;color:#a7a7a7;margin-top:2px">Plan Free</p>
-          </div>
-          <div class="sp2-menu-divider"></div>
-          <button class="sp2-menu-item" data-menu-link="account"><span id="sp2-ico-user" style="font-size:16px"></span> Cuenta</button>
-          <button class="sp2-menu-item" data-menu-link="premium"><span id="sp2-ico-star" style="font-size:16px"></span> Planes Premium</button>
-          <div class="sp2-menu-divider"></div>
-          <button class="sp2-menu-item" data-action="logout"><span id="sp2-ico-logout" style="font-size:16px"></span> Cerrar sesión</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- ══════════════════ MAIN AREA ══════════════════ -->
-  <div id="sp2-main-area">
-
-    <!-- ── SIDEBAR ── -->
-    <aside id="sp2-sidebar" aria-label="Tu biblioteca">
-      <!-- Header de biblioteca -->
-      <div class="sp2-lib-header">
-        <button class="sp2-lib-title-btn" id="sp2-lib-title-btn" data-nav="library" aria-label="Tu biblioteca">
-          <span id="sp2-ico-lib" style="font-size:24px"></span>
-          <span>Tu biblioteca</span>
-        </button>
-        <button class="sp2-lib-icon-btn" id="sp2-lib-search-btn" aria-label="Buscar en tu biblioteca" title="Buscar"><span id="sp2-ico-lib-search" style="font-size:20px"></span></button>
-        <button class="sp2-lib-icon-btn" id="sp2-lib-create" aria-label="Crear playlist" title="Crear playlist"><span id="sp2-ico-lib-plus" style="font-size:22px"></span></button>
-      </div>
-
-      <!-- Búsqueda en sidebar -->
-      <div id="sp2-lib-search-wrap" class="hidden" style="padding:0 12px 8px">
-        <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border-radius:500px;padding:6px 12px">
-          <span style="font-size:14px;color:#a7a7a7" id="sp2-ico-libsrch2"></span>
-          <input id="sp2-lib-search-sidebar" type="search" placeholder="Buscar en tu biblioteca"
-            style="flex:1;background:transparent;border:none;outline:none;font-size:13px;color:#fff;min-width:0"
-            aria-label="Buscar biblioteca"/>
-        </div>
-      </div>
-
-      <!-- Filter chips -->
-      <div class="sp2-lib-chips">
-        <button class="sp2-lib-chip active" data-lib-chip="all">Todas</button>
-        <button class="sp2-lib-chip" data-lib-chip="playlist">Playlists</button>
-        <button class="sp2-lib-chip" data-lib-chip="album">Álbumes</button>
-        <button class="sp2-lib-chip" data-lib-chip="artist">Artistas</button>
-      </div>
-
-      <!-- Library list -->
-      <div id="sp2-lib-list" class="scroll-area"></div>
-    </aside>
-
-    <!-- ── MAIN CONTENT ── -->
-    <main id="sp2-main">
-      <div id="sp2-view" class="scroll-area" role="main" aria-live="polite"></div>
-    </main>
-
-  </div><!-- /main area -->
-
-  <!-- ══════════════════ PLAYER BAR (desktop) ══════════════════ -->
-  <footer id="sp2-player" aria-label="Reproductor">
-
-    <!-- Left: track info -->
-    <div class="sp2-player-left">
-      <div id="sp2-player-cover" class="sp2-player-cover" role="img" aria-label="Portada"></div>
-      <div style="min-width:0;flex:1">
-        <p id="sp2-player-title"  class="sp2-player-title">Elige una canción</p>
-        <p id="sp2-player-artist" class="sp2-player-artist">Artista</p>
-      </div>
-      <button id="sp2-like" class="sp2-tool-btn" aria-label="Me gusta" style="font-size:18px;color:#a7a7a7"></button>
-    </div>
-
-    <!-- Center: controls + progress -->
-    <div class="sp2-player-center">
-      <div class="sp2-ctrl-row">
-        <button id="sp2-btn-shuffle" class="sp2-ctrl-btn" aria-label="Aleatorio"  title="Aleatorio"><span style="font-size:18px" id="sp2-ico-shuffle"></span></button>
-        <button id="sp2-btn-prev"    class="sp2-ctrl-btn" aria-label="Anterior"   title="Anterior"  style="color:#fff"><span style="font-size:22px" id="sp2-ico-prev"></span></button>
-        <button id="sp2-btn-play"    aria-label="Reproducir / Pausar">
-          <span style="margin-left:2px;font-size:20px;display:flex;align-items:center;justify-content:center;width:20px;height:20px" id="sp2-ico-play"></span>
-        </button>
-        <button id="sp2-btn-next"    class="sp2-ctrl-btn" aria-label="Siguiente"  title="Siguiente" style="color:#fff"><span style="font-size:22px" id="sp2-ico-next"></span></button>
-        <button id="sp2-btn-repeat"  class="sp2-ctrl-btn" aria-label="Repetir"    title="Repetir"><span style="font-size:18px" id="sp2-ico-repeat"></span></button>
-      </div>
-      <div class="sp2-progress-row">
-        <span id="sp2-time"  class="sp2-time">0:00</span>
-        <input id="sp2-progress" class="sp2-slider" type="range" min="0" max="100" step="0.1" value="0" aria-label="Progreso de reproducción"/>
-        <span id="sp2-dur"   class="sp2-time right">0:00</span>
-      </div>
-    </div>
-
-    <!-- Right: tools + volume -->
-    <div class="sp2-player-right">
-      <button id="sp2-btn-queue"   class="sp2-tool-btn" aria-label="Cola de reproducción" title="Cola"><span id="sp2-ico-queue" style="font-size:18px"></span></button>
-      <button id="sp2-player-devices" class="sp2-tool-btn" aria-label="Dispositivos" title="Dispositivos"><span id="sp2-ico-devices" style="font-size:18px"></span></button>
-      <button id="sp2-btn-mute"    class="sp2-tool-btn" aria-label="Silenciar" title="Silenciar"><span style="font-size:18px" id="sp2-ico-vol"></span></button>
-      <input id="sp2-volume" class="sp2-slider sp2-vol" type="range" min="0" max="100" value="70" aria-label="Volumen"/>
-    </div>
-  </footer>
-
-  <!-- ══════════════════ MINI PLAYER (móvil) ══════════════════ -->
-  <div id="sp2-mini-player" role="button" tabindex="0" aria-label="Abrir reproductor">
-    <span class="sp2-mini-bar" id="sp2-mini-bar"></span>
-    <div id="sp2-mini-cover" class="sp2-mini-cover"></div>
-    <div style="min-width:0;flex:1">
-      <p id="sp2-mini-title"  style="font-size:13px;font-weight:700;color:#fff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Elige una canción</p>
-      <p id="sp2-mini-artist" style="font-size:11px;color:#a7a7a7;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Artista</p>
-    </div>
-    <button id="sp2-mini-play" style="flex-shrink:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px" aria-label="Reproducir / Pausar">
-      <span id="sp2-ico-mini-play"></span>
-    </button>
+    <footer id="sp2-player" aria-label="Reproductor"></footer>
+    <div id="sp2-mini-player" role="button" tabindex="0" aria-label="Abrir reproductor"></div>
+    <nav id="sp2-bottom-nav" aria-label="Navegación principal"></nav>
   </div>
 
-  <!-- ══════════════════ BOTTOM NAV (móvil) ══════════════════ -->
-  <nav id="sp2-bottom-nav" aria-label="Navegación">
-    <a href="#/"        class="sp2-bottom-link" data-nav2="home">   <span class="ico" id="sp2-ico-bnhome"></span> Inicio</a>
-    <a href="#/search"  class="sp2-bottom-link" data-nav2="search"> <span class="ico" id="sp2-ico-bnsearch"></span> Buscar</a>
-    <a href="#/library" class="sp2-bottom-link" data-nav2="library"><span class="ico" id="sp2-ico-bnlib"></span> Biblioteca</a>
-    <a href="#/premium" class="sp2-bottom-link" data-nav2="premium"><span class="ico" id="sp2-ico-bnpremium"></span> Premium</a>
-  </nav>
+  <div id="sp2-now-playing" class="invisible" aria-hidden="true" aria-label="Reproductor a pantalla completa"></div>
+  <aside id="sp2-queue-panel" class="invisible" aria-label="Cola de reproducción" aria-hidden="true"></aside>
+  <div id="sp2-modal" class="hidden"></div>
+  <div id="sp2-toast" role="status" aria-live="polite"></div>
 
-</div><!-- /shell -->
-
-<!-- ══════════════════ NOW PLAYING (móvil fullscreen) ══════════════════ -->
-<div id="sp2-now-playing" class="invisible" aria-hidden="true" aria-label="Reproductor a pantalla completa">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 10px">
-    <button id="sp2-np-close" style="color:#fff;font-size:24px;width:40px;height:40px;display:flex;align-items:center;justify-content:center" aria-label="Cerrar"><span id="sp2-ico-npdown"></span></button>
-    <div style="text-align:center">
-      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#a7a7a7">Reproduciendo desde</p>
-      <p style="font-size:14px;font-weight:700;color:#fff">Spotify Clone</p>
-    </div>
-    <button style="color:#fff;font-size:22px;width:40px;height:40px;display:flex;align-items:center;justify-content:center" aria-label="Más opciones"><span id="sp2-ico-npmore"></span></button>
-  </div>
-
-  <div style="flex:1;display:flex;flex-direction:column;padding:0 24px 16px;overflow:hidden;justify-content:center;gap:24px">
-    <!-- Big cover -->
-    <div style="display:flex;justify-content:center">
-      <div id="sp2-np-cover"></div>
-    </div>
-
-    <!-- Title + like -->
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
-      <div style="min-width:0">
-        <p id="sp2-np-title"  style="font-size:22px;font-weight:900;color:#fff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Título</p>
-        <p id="sp2-np-artist" style="font-size:14px;color:#a7a7a7;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-top:4px">Artista</p>
-      </div>
-      <button id="sp2-np-like" style="flex-shrink:0;font-size:22px;color:#a7a7a7;transition:color .15s" aria-label="Me gusta"></button>
-    </div>
-
-    <!-- Progress -->
-    <div>
-      <div style="display:flex;align-items:center;gap:10px;width:100%">
-        <span id="sp2-np-time" style="font-size:11px;color:#a7a7a7;width:36px;text-align:right;font-variant-numeric:tabular-nums">0:00</span>
-        <input id="sp2-np-progress" class="sp2-slider" type="range" min="0" max="100" step="0.1" value="0" style="flex:1" aria-label="Progreso"/>
-        <span id="sp2-np-dur"  style="font-size:11px;color:#a7a7a7;width:36px;font-variant-numeric:tabular-nums">0:00</span>
-      </div>
-    </div>
-
-    <!-- Controls -->
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <button id="sp2-np-shuffle" style="font-size:22px;color:#a7a7a7;transition:color .15s" aria-label="Aleatorio"><span id="sp2-ico-npsh"></span></button>
-      <button id="sp2-np-prev"    style="font-size:30px;color:#fff"  aria-label="Anterior"><span id="sp2-ico-npprev"></span></button>
-      <button id="sp2-np-play" style="width:64px;height:64px;border-radius:50%;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-size:28px;transition:transform .1s;box-shadow:0 8px 32px rgba(0,0,0,.4)" aria-label="Reproducir">
-        <span style="margin-left:3px;display:flex;width:28px;height:28px;align-items:center;justify-content:center" id="sp2-ico-npplay"></span>
-      </button>
-      <button id="sp2-np-next"    style="font-size:30px;color:#fff"  aria-label="Siguiente"><span id="sp2-ico-npnext"></span></button>
-      <button id="sp2-np-repeat"  style="font-size:22px;color:#a7a7a7;transition:color .15s" aria-label="Repetir"><span id="sp2-ico-nprep"></span></button>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════ QUEUE PANEL ══════════════════ -->
-<aside id="sp2-queue-panel" class="invisible" aria-label="Cola de reproducción" aria-hidden="true">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;flex-shrink:0">
-    <h2 style="font-size:16px;font-weight:900;color:#fff">Cola de reproducción</h2>
-    <button id="sp2-queue-close" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#a7a7a7;font-size:20px;transition:background .15s,color .15s" onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='#a7a7a7'" aria-label="Cerrar">
-      <span id="sp2-ico-qclose"></span>
-    </button>
-  </div>
-  <div style="display:flex;gap:8px;padding:0 16px 12px;flex-shrink:0">
-    <button class="sp2-queue-tab" data-queue-tab="queue"
-      style="padding:6px 14px;border-radius:500px;font-size:13px;font-weight:700;background:#fff;color:#000;transition:background .15s">Cola</button>
-    <button class="sp2-queue-tab" data-queue-tab="lyrics"
-      style="padding:6px 14px;border-radius:500px;font-size:13px;font-weight:700;background:rgba(255,255,255,.1);color:#fff;transition:background .15s">Letra</button>
-  </div>
-  <div id="sp2-queue-content" class="scroll-area" style="flex:1;overflow-y:auto"></div>
-</aside>
-
-<!-- ══════════════════ MODAL ══════════════════ -->
-<div id="sp2-modal" class="hidden"></div>
-
-<!-- ══════════════════ TOAST ══════════════════ -->
-<div id="sp2-toast" role="status" aria-live="polite"></div>
-
-<!-- ══════════════════ JS ══════════════════ -->
-<script src="assets/js/icons.js"></script>
-<script src="assets/js/store.js"></script>
-<script src="assets/js/data.js"></script>
-<script src="assets/js/audio.js"></script>
-<script src="assets/js/cards.js"></script>
-<script src="assets/js/views.js"></script>
-<script src="assets/js/script.js"></script>
-
-<!-- Inyectar iconos en el HTML estático -->
-<script>
-(function injectStaticIcons() {
-  const map = {
-    "sp2-icon-logo":     "logo",
-    "sp2-ico-back":      "chevron-left",
-    "sp2-ico-fwd":       "chevron-right",
-    "sp2-ico-search":    "search",
-    "sp2-ico-dl":        "download",
-    "sp2-ico-bell":      "bell",
-    "sp2-ico-chdown":    "chevron-down",
-    "sp2-ico-user":      "user",
-    "sp2-ico-star":      "premium",
-    "sp2-ico-logout":    "logout",
-    "sp2-ico-lib":       "library",
-    "sp2-ico-lib-search":"search",
-    "sp2-ico-lib-plus":  "plus",
-    "sp2-ico-libsrch2":  "search",
-    "sp2-ico-shuffle":   "shuffle",
-    "sp2-ico-prev":      "prev",
-    "sp2-ico-play":      "play",
-    "sp2-ico-next":      "next",
-    "sp2-ico-repeat":    "repeat",
-    "sp2-ico-queue":     "queue",
-    "sp2-ico-devices":   "devices",
-    "sp2-ico-vol":       "volume",
-    "sp2-ico-mini-play": "play",
-    "sp2-ico-bnhome":    "home",
-    "sp2-ico-bnsearch":  "search",
-    "sp2-ico-bnlib":     "library",
-    "sp2-ico-bnpremium": "premium",
-    "sp2-ico-npdown":    "chevron-down",
-    "sp2-ico-npmore":    "more",
-    "sp2-ico-npsh":      "shuffle",
-    "sp2-ico-npprev":    "prev",
-    "sp2-ico-npplay":    "play",
-    "sp2-ico-npnext":    "next",
-    "sp2-ico-nprep":     "repeat",
-    "sp2-ico-qclose":    "close",
-  };
-  for (const [id, name] of Object.entries(map)) {
-    const el = document.getElementById(id);
-    if (el && ICONS[name]) el.innerHTML = ICONS[name];
-  }
-
-  // Like button initial
-  const likeBtn = document.getElementById("sp2-like");
-  if (likeBtn) likeBtn.innerHTML = `<span class="text-[18px]">${icon("heart-outline")}</span>`;
-
-  // Slider dynamic fill
-  function updateSliderFill(el) {
-    if (!el) return;
-    const v = ((el.value - el.min) / (el.max - el.min)) * 100;
-    el.style.setProperty("--pct", v + "%");
-  }
-  const prog = document.getElementById("sp2-progress");
-  const vol  = document.getElementById("sp2-volume");
-  if (prog) { updateSliderFill(prog); prog.addEventListener("input", () => updateSliderFill(prog)); }
-  if (vol)  { updateSliderFill(vol);  vol.addEventListener("input",  () => updateSliderFill(vol));  }
-
-  // Also update from playerchange event
-  window.addEventListener("sp2:playerchange", () => {
-    if (prog) updateSliderFill(prog);
-    if (vol)  updateSliderFill(vol);
-  });
-  setInterval(() => { if (prog) updateSliderFill(prog); }, 250);
-})();
-</script>
-
-<style>
-/* Responsive helpers no en el CSS principal */
-@media (max-width: 768px) { .topbar-desktop { display: none !important; } }
-</style>
-
+  <script src="assets/js/icons.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/audio.js"></script>
+  <script src="assets/js/cards.js"></script>
+  <script src="assets/js/views.js"></script>
+  <script src="assets/js/shell.js"></script>
+  <script src="assets/js/script.js"></script>
 </body>
 </html>

@@ -1,22 +1,46 @@
 /* =====================================================================
- * Spotify-dos — Componentes de tarjetas reutilizables
+ * Spotify-dos — Componentes de tarjetas y reproductor
  * ================================================================== */
 
 function esc(s) {
   return String(s).replace(/[&<>"']/g, m =>
-    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
   );
+}
+
+/* ─── rutas reales entre páginas ─── */
+const PAGE_ROUTES = {
+  home: "index.html",
+  search: "buscar.html",
+  library: "biblioteca.html",
+  explore: "explorar.html",
+  about: "acerca.html",
+  premium: "premium.html",
+  account: "cuenta.html",
+};
+
+function routeUrl(link) {
+  if (!link) return "index.html";
+  if (/^(https?:|mailto:|tel:|#|data:)/.test(link)) return link;
+  if (/\.html(\?.*)?$/.test(link)) return link;
+  const clean = link.replace(/^#\//, "");
+  if (PAGE_ROUTES[clean]) return PAGE_ROUTES[clean];
+  const [type, id] = clean.split("/");
+  if (!id) return PAGE_ROUTES[type] || "index.html";
+  if (["playlist", "album", "artist", "genre", "liked"].includes(type)) {
+    return `detalle.html?tipo=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
+  }
+  return "index.html";
 }
 
 /* ─── imagen de portada ─── */
 function coverSrc(item, type) {
   if (item?.img) return `url('${item.img}')`;
-  // fallback gradient
   const colors = {
-    "a-badbunny":"#18181b","a-karolg":"#ec4899","a-taylorswift":"#7c3aed",
-    "a-weeknd":"#991b1b","a-feid":"#065f46","a-dualipa":"#1d4ed8",
-    "a-rosalia":"#9d174d","a-kendrick":"#78350f","a-sza":"#4c1d95",
-    "a-coldplay":"#1e40af","a-monlaferte":"#dc2626","a-bunkers":"#374151",
+    "a-badbunny": "#18181b", "a-karolg": "#ec4899", "a-taylorswift": "#7c3aed",
+    "a-weeknd": "#991b1b", "a-feid": "#065f46", "a-dualipa": "#1d4ed8",
+    "a-rosalia": "#9d174d", "a-kendrick": "#78350f", "a-sza": "#4c1d95",
+    "a-coldplay": "#1e40af", "a-monlaferte": "#dc2626", "a-bunkers": "#374151",
   };
   const c = colors[item?.id] || "#282828";
   return `linear-gradient(135deg, ${c} 0%, #121212 100%)`;
@@ -29,61 +53,65 @@ function coverBg(item, type) {
 /* ─── card estilo Spotify (vertical) ─── */
 function cardHtml({ type, item, subtext, playTarget, href, round = false }) {
   const isActive = Player.song &&
-    ((type === "song"    && Player.song.id === item.id) ||
-     (type === "album"   && Player.song.albumId === item.id) ||
-     (type === "artist"  && Player.song.artistId === item.id) ||
-     (type === "playlist"&& Player.context.id === item.id));
+    ((type === "song" && Player.song.id === item.id) ||
+     (type === "album" && Player.song.albumId === item.id) ||
+     (type === "artist" && Player.song.artistId === item.id) ||
+     (type === "playlist" && Player.context.id === item.id));
 
   const roundCls = round || type === "artist" ? "rounded-full" : "rounded-md";
-  const title    = esc(type === "album" ? item.title : item.name);
-  const sub      = esc(subtext || "");
-  const pt       = playTarget || `${type}:${item.id}`;
-  const lnk      = href || `${type}/${item.id}`;
+  const title = esc(type === "album" ? item.title : item.name);
+  const sub = esc(subtext || "");
+  const pt = playTarget || `${type}:${item.id}`;
+  const url = routeUrl(href || `${type}/${item.id}`);
 
   return `
-<article class="sp2-card group relative flex flex-col gap-2 cursor-pointer rounded-lg p-3 transition-all duration-200 hover:bg-white/[0.08] ${isActive ? "bg-white/[0.06]" : ""}"
-  data-link="${lnk}" data-card="${pt}">
-  <div class="relative w-full aspect-square overflow-hidden ${roundCls} shadow-lg mb-1">
-    <div class="absolute inset-0 ${roundCls}" style="${coverBg(item, type)}"></div>
-    <div class="absolute inset-0 ${roundCls} bg-black/0 group-hover:bg-black/20 transition-colors duration-200"></div>
-    <button class="sp2-play-btn absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#1ed760] text-black shadow-xl translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 hover:bg-[#3be477]"
-      data-collection-play="${pt}" aria-label="Reproducir ${title}" tabindex="-1">
-      <span class="flex h-5 w-5 items-center justify-center ml-0.5 text-[18px]">${icon(isActive && Player.playing ? "pause" : "play")}</span>
-    </button>
-  </div>
-  <div class="min-w-0">
-    <p class="truncate text-sm font-bold text-white leading-tight ${isActive ? "text-[#1ed760]" : ""}">${title}</p>
-    <p class="truncate text-xs text-[#a7a7a7] mt-0.5 leading-snug">${sub}</p>
+<article class="sp2-card group relative flex flex-col gap-2 rounded-lg p-3 transition-all duration-200 hover:bg-white/[0.08] ${isActive ? "bg-white/[0.06]" : ""}">
+  <a class="absolute inset-0 z-0 rounded-lg" href="${url}" aria-label="Abrir ${title}"></a>
+  <div class="relative z-10 flex min-w-0 flex-col gap-2 pointer-events-none">
+    <div class="relative mb-1 aspect-square w-full overflow-hidden ${roundCls} shadow-lg">
+      <div class="absolute inset-0 ${roundCls}" style="${coverBg(item, type)}"></div>
+      <div class="absolute inset-0 ${roundCls} bg-black/0 transition-colors duration-200 group-hover:bg-black/20"></div>
+      <button type="button" class="sp2-play-btn pointer-events-auto absolute bottom-2 right-2 z-20 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-[#1ed760] text-black opacity-0 shadow-xl transition-all duration-200 hover:scale-105 hover:bg-[#3be477] group-hover:translate-y-0 group-hover:opacity-100 focus:translate-y-0 focus:opacity-100"
+        data-collection-play="${pt}" aria-label="Reproducir ${title}">
+        <span class="ml-0.5 flex h-5 w-5 items-center justify-center text-[18px]">${icon(isActive && Player.playing ? "pause" : "play")}</span>
+      </button>
+    </div>
+    <div class="min-w-0">
+      <p class="truncate text-sm font-bold leading-tight text-white">${title}</p>
+      <p class="mt-0.5 truncate text-xs leading-snug text-[#a7a7a7]">${sub}</p>
+    </div>
   </div>
 </article>`;
 }
 
 /* ─── fila de canción ─── */
 function songRowHtml(song, index, opts = {}) {
-  const album  = DB.album(song.albumId);
+  const album = DB.album(song.albumId);
   const artist = DB.artist(song.artistId);
   const isActive = Player.song?.id === song.id;
-  const isLiked  = Player.liked.has(song.id);
-  const qType    = opts.queueType || "playlist";
-  const qId      = opts.queueId   || "pl-topglobal";
+  const isLiked = Player.liked.has(song.id);
+  const qType = opts.queueType || "playlist";
+  const qId = opts.queueId || "pl-topglobal";
   const showAlbum = opts.showAlbum !== false;
+  const artistUrl = routeUrl(`artist/${song.artistId}`);
+  const albumUrl = routeUrl(`album/${song.albumId}`);
 
   return `
-<div class="sp2-song-row group grid items-center gap-3 rounded-md px-4 py-2 transition-colors hover:bg-white/[0.07] ${isActive ? "bg-white/[0.05]" : ""}"
-  style="grid-template-columns: 1.5rem 2.5rem minmax(0,1fr) ${showAlbum ? "minmax(0,1fr)" : ""} 4rem 2rem"
-  data-play-song="${song.id}" data-queue-type="${qType}" data-queue-id="${qId}">
-  <span class="text-center text-sm tabular-nums ${isActive ? "text-[#1ed760]" : "text-[#a7a7a7]"} group-hover:hidden select-none">${isActive && Player.playing ? icon("volume-low") : index + 1}</span>
-  <button class="hidden group-hover:flex h-6 w-6 items-center justify-center text-white" data-play-song="${song.id}" data-queue-type="${qType}" data-queue-id="${qId}">
+<div class="sp2-song-row ${showAlbum ? "sp2-song-row--album" : "sp2-song-row--slim"} group grid items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-white/[0.07] sm:gap-3 sm:px-4 ${isActive ? "bg-white/[0.05]" : ""}"
+  data-play-song="${song.id}" data-queue-type="${qType}" data-queue-id="${qId}" tabindex="0" role="button"
+  aria-label="Reproducir ${esc(song.title)} de ${esc(artist?.name || "")}">
+  <span class="select-none text-center text-sm tabular-nums ${isActive ? "text-[#1ed760]" : "text-[#a7a7a7]"}">${isActive && Player.playing ? icon("volume-low") : index + 1}</span>
+  <button type="button" class="sp2-row-play hidden h-6 w-6 items-center justify-center text-white group-hover:flex group-focus-within:flex" data-play-song="${song.id}" data-queue-type="${qType}" data-queue-id="${qId}" aria-label="Reproducir ${esc(song.title)}">
     <span class="text-[18px]">${icon(isActive && Player.playing ? "pause" : "play")}</span>
   </button>
   <span class="h-10 w-10 shrink-0 rounded bg-cover bg-center shadow" style="${coverBg(album || {}, "album")}"></span>
   <div class="min-w-0">
     <p class="truncate text-sm font-bold leading-tight ${isActive ? "text-[#1ed760]" : "text-white"}">${esc(song.title)}</p>
-    <p class="truncate text-xs text-[#a7a7a7] leading-snug hover:underline cursor-pointer" data-link="artist/${song.artistId}">${esc(artist?.name || "")}</p>
+    <a href="${artistUrl}" class="block truncate text-xs leading-snug text-[#a7a7a7] hover:text-white hover:underline">${esc(artist?.name || "")}</a>
   </div>
-  ${showAlbum ? `<p class="hidden sm:block truncate text-sm text-[#a7a7a7] hover:text-white hover:underline cursor-pointer" data-link="album/${song.albumId}">${esc(album?.title || "")}</p>` : ""}
-  <span class="text-xs tabular-nums text-[#a7a7a7] text-right">${fmtTime(song.duration)}</span>
-  <button class="opacity-0 group-hover:opacity-100 ${isLiked ? "!opacity-100 text-[#1ed760]" : "text-[#a7a7a7] hover:text-white"} transition-opacity" data-like="${song.id}" aria-label="Me gusta">
+  ${showAlbum ? `<a href="${albumUrl}" class="hidden truncate text-sm text-[#a7a7a7] hover:text-white hover:underline sm:block">${esc(album?.title || "")}</a>` : ""}
+  <span class="text-right text-xs tabular-nums text-[#a7a7a7]">${fmtTime(song.duration)}</span>
+  <button type="button" class="sp2-row-like ${isLiked ? "opacity-100 text-[#1ed760]" : "text-[#a7a7a7] hover:text-white"} transition-opacity" data-like="${song.id}" aria-label="Me gusta ${esc(song.title)}" aria-pressed="${isLiked}">
     <span class="text-[16px]">${icon(isLiked ? "heart" : "heart-outline")}</span>
   </button>
 </div>`;
@@ -91,9 +119,9 @@ function songRowHtml(song, index, opts = {}) {
 
 /* ─── header de sección ─── */
 function sectionHeader(title, href = "") {
-  return `<div class="flex items-end justify-between mb-4 mt-2">
+  return `<div class="mb-4 mt-2 flex items-end justify-between gap-4">
     <h2 class="text-xl font-black text-white">${esc(title)}</h2>
-    ${href ? `<a href="#/${href}" class="text-xs font-bold text-[#a7a7a7] hover:text-white uppercase tracking-wider transition-colors">Ver todo</a>` : ""}
+    ${href ? `<a href="${routeUrl(href)}" class="shrink-0 text-xs font-bold uppercase tracking-wider text-[#a7a7a7] transition-colors hover:text-white">Ver todo</a>` : ""}
   </div>`;
 }
 
@@ -111,15 +139,15 @@ function detailHeroHtml({ kind, name, img, meta = "", extra = "", badge = "" }) 
   <div class="absolute inset-0" style="background-image:${blur};background-size:cover;background-position:center;filter:blur(60px);transform:scale(1.3);opacity:.55"></div>
   <div class="absolute inset-0" style="background:linear-gradient(to bottom, rgba(0,0,0,.2) 0%, rgba(18,18,18,.7) 60%, #121212 100%)"></div>
   <div class="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:gap-8">
-    ${img ? `<div class="mx-auto h-44 w-44 shrink-0 sm:mx-0 sm:h-[220px] sm:w-[220px] overflow-hidden ${kind==="Artista" ? "rounded-full" : "rounded-lg"} shadow-2xl ring-1 ring-white/10">
+    ${img ? `<div class="mx-auto h-44 w-44 shrink-0 overflow-hidden ${kind === "Artista" ? "rounded-full" : "rounded-lg"} shadow-2xl ring-1 ring-white/10 sm:mx-0 sm:h-[220px] sm:w-[220px]">
       <div class="h-full w-full" style="background-image:url('${img}');background-size:cover;background-position:center"></div>
     </div>` : ""}
     <div class="min-w-0 text-center sm:text-left">
-      ${badge ? `<p class="mb-1 text-xs font-bold uppercase tracking-widest text-white/70">${badge}</p>` : ""}
+      ${badge ? `<p class="mb-1 text-xs font-bold uppercase tracking-widest text-white/70">${esc(badge)}</p>` : ""}
       <p class="text-[11px] font-bold uppercase tracking-wider text-white/60">${esc(kind)}</p>
-      <h1 class="mt-1 text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl break-words">${esc(name)}</h1>
-      ${meta ? `<div class="mt-3 text-sm text-white/80 flex flex-wrap gap-x-3 gap-y-1 justify-center sm:justify-start">${meta}</div>` : ""}
-      ${extra ? `<p class="mt-2 text-sm text-[#a7a7a7] max-w-xl">${extra}</p>` : ""}
+      <h1 class="mt-1 break-words text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">${esc(name)}</h1>
+      ${meta ? `<div class="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-sm text-white/80 sm:justify-start">${meta}</div>` : ""}
+      ${extra ? `<p class="mt-2 max-w-xl text-sm text-[#a7a7a7]">${extra}</p>` : ""}
     </div>
   </div>
 </div>`;
@@ -132,27 +160,27 @@ function actionBarHtml(type, id, opts = {}) {
   const isPlaying = Player.playing && Player.context.id === id;
 
   return `
-<div class="sticky top-0 z-20 flex items-center gap-3 px-4 py-5 sm:px-8"
+<div class="sticky top-0 z-20 flex flex-wrap items-center gap-3 px-4 py-5 sm:px-8"
   style="background:linear-gradient(to bottom, rgba(18,18,18,.92) 80%, transparent)">
-  <button class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#1ed760] text-black shadow-2xl transition-transform hover:scale-105 active:scale-95"
+  <button type="button" class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#1ed760] text-black shadow-2xl transition-transform hover:scale-105 active:scale-95"
     data-collection-play="${type}:${id}" aria-label="Reproducir">
     <span class="ml-0.5 flex h-6 w-6 items-center justify-center text-[22px]">${icon(isPlaying ? "pause" : "play")}</span>
   </button>
-  <button class="flex h-9 w-9 items-center justify-center rounded-full text-[#a7a7a7] transition hover:scale-110 hover:text-white"
+  <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-[#a7a7a7] transition hover:scale-110 hover:text-white"
     data-shuffle-collection="${type}:${id}" aria-label="Mezclar" title="Aleatorio">
     <span class="text-[22px]">${icon("shuffle")}</span>
   </button>
-  ${opts.follow ? `<button class="rounded-full border px-5 py-1.5 text-sm font-bold transition-all hover:scale-105
+  ${opts.follow ? `<button type="button" class="rounded-full border px-5 py-1.5 text-sm font-bold transition-all hover:scale-105
       ${saved ? "border-[#1ed760] text-[#1ed760] hover:border-white hover:text-white" : "border-white/40 text-white hover:border-white"}"
-      data-follow-artist="${id}">${saved ? "Siguiendo" : "Seguir"}</button>` : ""}
-  ${opts.saveAlbum ? `<button class="rounded-full text-[26px] transition hover:scale-110
+      data-follow-artist="${id}" aria-pressed="${saved}">${saved ? "Siguiendo" : "Seguir"}</button>` : ""}
+  ${opts.saveAlbum ? `<button type="button" class="rounded-full text-[26px] transition hover:scale-110
       ${savedAlbum ? "text-[#1ed760]" : "text-[#a7a7a7] hover:text-white"}"
-      data-save-album="${id}" aria-label="${savedAlbum ? "Guardado" : "Guardar en biblioteca"}">
+      data-save-album="${id}" aria-label="${savedAlbum ? "Guardado" : "Guardar en biblioteca"}" aria-pressed="${savedAlbum}">
       <span>${icon(savedAlbum ? "heart" : "heart-outline")}</span>
     </button>` : ""}
-  ${opts.custom ? `<button class="rounded-full border border-white/40 px-4 py-1.5 text-sm font-bold text-white hover:scale-105 hover:border-white transition-all"
-    data-add-songs="${id}">Agregar canciones</button>` : ""}
-  <button class="ml-1 flex h-9 w-9 items-center justify-center rounded-full text-[#a7a7a7] hover:text-white transition hover:scale-110"
+  ${opts.custom ? `<button type="button" class="rounded-full border border-white/40 px-4 py-1.5 text-sm font-bold text-white transition-all hover:scale-105 hover:border-white"
+    data-add-songs="${id}">${icon("plus")} Agregar canciones</button>` : ""}
+  <button type="button" class="ml-1 flex h-9 w-9 items-center justify-center rounded-full text-[#a7a7a7] transition hover:scale-110 hover:text-white"
     data-more-context="${type}:${id}" aria-label="Más opciones">
     <span class="text-[22px]">${icon("more")}</span>
   </button>
@@ -163,10 +191,10 @@ function actionBarHtml(type, id, opts = {}) {
 function songTableHtml(songs, opts = {}) {
   const showAlbum = opts.showAlbum !== false;
   return `
-<div class="px-4 pb-8 sm:px-8">
-  <div class="mb-2 grid items-center gap-3 border-b border-white/10 pb-2 px-4 text-[11px] font-bold uppercase tracking-wider text-[#a7a7a7]"
-    style="grid-template-columns: 1.5rem 2.5rem minmax(0,1fr) ${showAlbum ? "minmax(0,1fr)" : ""} 4rem 2rem">
+<div class="px-1 pb-8 sm:px-8">
+  <div class="sp2-song-head ${showAlbum ? "sp2-song-head--album" : "sp2-song-head--slim"} mb-2 grid items-center gap-2 border-b border-white/10 px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-[#a7a7a7] sm:gap-3 sm:px-4">
     <span class="text-center">#</span>
+    <span></span>
     <span></span>
     <span>Título</span>
     ${showAlbum ? `<span class="hidden sm:block">Álbum</span>` : ""}
@@ -180,13 +208,13 @@ function songTableHtml(songs, opts = {}) {
 /* ─── fila compacta en sidebar ─── */
 function sidebarItemHtml(item, type) {
   const name = esc(type === "album" ? item.title : item.name);
-  const sub  = type === "artist" ? "Artista" : type === "album" ? `Álbum · ${esc(DB.artist(item.artistId)?.name || "")}` : "Playlist";
-  const lnk  = `${type}/${item.id}`;
+  const sub = type === "artist" ? "Artista" : type === "album" ? `Álbum · ${esc(DB.artist(item.artistId)?.name || "")}` : "Playlist";
+  const url = routeUrl(`${type}/${item.id}`);
   const isActive = Player.context.id === item.id;
   const round = type === "artist" ? "rounded-full" : "rounded-sm";
 
   return `
-<a href="#/${lnk}" class="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-white/[0.07] ${isActive ? "bg-white/[0.05]" : ""}" data-link="${lnk}">
+<a href="${url}" class="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-white/[0.07] ${isActive ? "bg-white/[0.05]" : ""}">
   <span class="h-11 w-11 shrink-0 overflow-hidden ${round}" style="${coverBg(item, type)}"></span>
   <div class="min-w-0 flex-1">
     <p class="truncate text-sm font-semibold leading-tight ${isActive ? "text-[#1ed760]" : "text-white"}">${name}</p>
@@ -209,77 +237,114 @@ function toast(msg, duration = 2800) {
   }, duration);
 }
 
-/* ─── update progress bar UI ─── */
+/* ─── progreso del reproductor ─── */
 function updateProgressUI() {
   const pct = Player.duration > 0 ? (Player.currentTime / Player.duration) * 100 : 0;
 
-  const bar   = document.getElementById("sp2-progress");
-  const time  = document.getElementById("sp2-time");
-  const dur   = document.getElementById("sp2-dur");
-  const mbar  = document.getElementById("sp2-mini-bar");
+  const bar = document.getElementById("sp2-progress");
+  const time = document.getElementById("sp2-time");
+  const dur = document.getElementById("sp2-dur");
+  const npBar = document.getElementById("sp2-np-progress");
+  const npTime = document.getElementById("sp2-np-time");
+  const npDur = document.getElementById("sp2-np-dur");
+  const mbar = document.getElementById("sp2-mini-bar");
 
-  if (bar)  bar.value = pct;
+  if (bar) {
+    bar.value = pct;
+    if (typeof updateSliderFill === "function") updateSliderFill(bar);
+  }
+  if (npBar) {
+    npBar.value = pct;
+    if (typeof updateSliderFill === "function") updateSliderFill(npBar);
+  }
   if (time) time.textContent = fmtTime(Player.currentTime);
-  if (dur)  dur.textContent  = fmtTime(Player.duration);
+  if (dur) dur.textContent = fmtTime(Player.duration);
+  if (npTime) npTime.textContent = fmtTime(Player.currentTime);
+  if (npDur) npDur.textContent = fmtTime(Player.duration);
   if (mbar) mbar.style.width = pct + "%";
 }
 
-/* ─── update player bar UI ─── */
+/* ─── UI de la barra del reproductor ─── */
 function renderPlayerUI() {
-  const song   = Player.song;
-  const album  = song ? DB.album(song.albumId) : null;
+  const song = Player.song;
+  const album = song ? DB.album(song.albumId) : null;
   const artist = song ? DB.artist(song.artistId) : null;
 
-  // cover
   const coverStyle = album?.img ? `url('${album.img}')` : "linear-gradient(135deg,#282828,#121212)";
-  ["sp2-player-cover","sp2-mini-cover","sp2-np-cover"].forEach(id => {
+  ["sp2-player-cover", "sp2-mini-cover", "sp2-np-cover"].forEach(id => {
     const el = document.getElementById(id);
-    if (el) { el.style.backgroundImage = coverStyle; el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center"; }
+    if (el) {
+      el.style.backgroundImage = coverStyle;
+      el.style.backgroundSize = "cover";
+      el.style.backgroundPosition = "center";
+    }
   });
 
-  // title / artist
-  const title  = song?.title  || "Elige una canción";
-  const artName= artist?.name || "";
-  setTxt("sp2-player-title",  title);
+  const title = song?.title || "Elige una canción";
+  const artName = artist?.name || "Artista";
+  setTxt("sp2-player-title", title);
   setTxt("sp2-player-artist", artName);
-  setTxt("sp2-mini-title",    title);
-  setTxt("sp2-mini-artist",   artName);
-  setTxt("sp2-np-title",      title);
-  setTxt("sp2-np-artist",     artName);
+  setTxt("sp2-mini-title", title);
+  setTxt("sp2-mini-artist", artName);
+  setTxt("sp2-np-title", title);
+  setTxt("sp2-np-artist", artName);
 
-  // play/pause icons
+  const contextLabel = Player.context.label || "Spotify Clone";
+  setTxt("sp2-np-context", contextLabel);
+
   const playIco = Player.playing ? icon("pause") : icon("play");
-  ["sp2-btn-play","sp2-mini-play","sp2-np-play"].forEach(id => {
+  ["sp2-btn-play", "sp2-mini-play", "sp2-np-play"].forEach(id => {
     const btn = document.getElementById(id);
-    if (btn) { const sp = btn.querySelector("span"); if (sp) sp.innerHTML = playIco; }
+    if (btn) {
+      const sp = btn.querySelector("span");
+      if (sp) sp.innerHTML = playIco;
+      btn.setAttribute("aria-label", Player.playing ? "Pausar" : "Reproducir");
+    }
   });
 
-  // like button
-  const liked = song && Player.liked.has(song.id);
-  ["sp2-like","sp2-np-like"].forEach(id => {
+  const liked = !!(song && Player.liked.has(song.id));
+  ["sp2-like", "sp2-np-like"].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) {
       btn.innerHTML = `<span class="text-[18px]">${icon(liked ? "heart" : "heart-outline")}</span>`;
       btn.classList.toggle("text-[#1ed760]", liked);
       btn.classList.toggle("text-[#a7a7a7]", !liked);
+      btn.setAttribute("aria-pressed", liked ? "true" : "false");
     }
   });
 
-  // shuffle
-  const shufBtn = document.getElementById("sp2-btn-shuffle");
-  if (shufBtn) shufBtn.classList.toggle("text-[#1ed760]", Player.shuffle);
+  ["sp2-btn-shuffle", "sp2-np-shuffle"].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.classList.toggle("text-[#1ed760]", Player.shuffle);
+      btn.classList.toggle("text-[#a7a7a7]", !Player.shuffle);
+      btn.setAttribute("aria-pressed", Player.shuffle ? "true" : "false");
+    }
+  });
 
-  // repeat
-  const repBtn = document.getElementById("sp2-btn-repeat");
-  if (repBtn) {
-    repBtn.innerHTML = `<span class="text-[18px]">${icon(Player.repeat === "one" ? "repeat-one" : "repeat")}</span>`;
-    repBtn.classList.toggle("text-[#1ed760]", Player.repeat !== "none");
-  }
+  ["sp2-btn-repeat", "sp2-np-repeat"].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      const span = btn.querySelector("span");
+      if (span) span.innerHTML = icon(Player.repeat === "one" ? "repeat-one" : "repeat");
+      btn.classList.toggle("text-[#1ed760]", Player.repeat !== "none");
+      btn.classList.toggle("text-[#a7a7a7]", Player.repeat === "none");
+      btn.setAttribute("aria-label", Player.repeat === "none" ? "Repetir" : Player.repeat === "one" ? "Repetir una canción" : "Repetir cola");
+    }
+  });
 
-  // volume
   const volEl = document.getElementById("sp2-volume");
-  if (volEl) volEl.value = Player.volume * 100;
+  if (volEl) {
+    volEl.value = Player.volume * 100;
+    if (typeof updateSliderFill === "function") updateSliderFill(volEl);
+  }
   updateVolumeIcon();
+
+  const playerCover = document.getElementById("sp2-player-cover");
+  if (playerCover) {
+    playerCover.setAttribute("aria-label", song ? `Portada de ${album?.title || title}` : "Sin canción");
+    playerCover.title = song && song.albumId ? "Abrir álbum" : "";
+  }
 
   updateProgressUI();
 }
@@ -295,6 +360,8 @@ function updateVolumeIcon() {
   const v = Player.volume;
   const ico = v === 0 ? "volume-off" : v < 0.4 ? "volume-low" : "volume";
   btn.innerHTML = `<span class="text-[18px]">${icon(ico)}</span>`;
+  btn.setAttribute("aria-label", v === 0 ? "Activar sonido" : "Silenciar");
+  btn.setAttribute("aria-pressed", v === 0 ? "true" : "false");
 }
 
 function renderLikeButtons() {
@@ -305,6 +372,7 @@ function renderLikeButtons() {
     btn.classList.toggle("text-[#1ed760]", liked);
     btn.classList.toggle("text-[#a7a7a7]", !liked);
     btn.classList.toggle("opacity-100", liked);
+    btn.setAttribute("aria-pressed", liked ? "true" : "false");
   });
 }
 

@@ -1,6 +1,11 @@
 /* =====================================================================
  * Spotify-dos — Reproductor de audio simulado
+ * No reproduce audio real: simula tiempo, cola y controles.
+ * El estado se persiste en LocalStorage para sobrevivir a la navegación
+ * entre páginas y a las recargas.
  * ================================================================== */
+
+const PLAYER_STATE_KEY = "playerState";
 
 const Player = {
   audio: new Audio(),
@@ -29,7 +34,50 @@ function fmtTime(sec) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function savePlayerState() {
+  Store.set(PLAYER_STATE_KEY, {
+    songId: Player.song?.id || null,
+    queue: Player.queue,
+    index: Player.index,
+    context: Player.context,
+    playing: Player.playing,
+    shuffle: Player.shuffle,
+    repeat: Player.repeat,
+    volume: Player.volume,
+    currentTime: Player.currentTime,
+    duration: Player.duration,
+    savedAt: Date.now(),
+  });
+}
+
+function restorePlayerState() {
+  const state = Store.get(PLAYER_STATE_KEY);
+  if (!state || !state.songId) return;
+  const song = DB.song(state.songId);
+  if (!song) return;
+
+  const queue = Array.isArray(state.queue) ? state.queue.filter(id => DB.song(id)) : [];
+  Player.queue = queue.length ? queue : [song.id];
+  const savedIndex = Number(state.index);
+  Player.index = Number.isFinite(savedIndex) ? Math.max(0, Math.min(savedIndex, Player.queue.length - 1)) : 0;
+  const realIndex = Player.queue.indexOf(song.id);
+  if (realIndex >= 0) Player.index = realIndex;
+
+  Player.context = state.context && typeof state.context === "object"
+    ? { type: state.context.type || "", id: state.context.id || "", label: state.context.label || "" }
+    : { type: "", id: "", label: "" };
+  Player.song = song;
+  Player.playing = !!state.playing;
+  Player.shuffle = !!state.shuffle;
+  Player.repeat = ["none", "all", "one"].includes(state.repeat) ? state.repeat : "none";
+  Player.volume = typeof state.volume === "number" ? Math.max(0, Math.min(1, state.volume)) : 0.7;
+  Player.duration = song.duration || Number(state.duration) || 180;
+  Player.currentTime = Math.max(0, Math.min(Number(state.currentTime) || 0, Player.duration));
+  Player.audio.volume = Player.volume;
+}
+
 function dispatchPlayerChange() {
+  savePlayerState();
   window.dispatchEvent(new CustomEvent("sp2:playerchange"));
 }
 
@@ -48,6 +96,7 @@ function playSong(songId, queueIds, contextType, contextId, contextLabel) {
   Player.currentTime = 0;
   Player.duration = song.duration || 180;
   Player.audio.pause();
+  Player.audio.volume = Player.volume;
 
   dispatchPlayerChange();
 }
@@ -75,27 +124,39 @@ function playCollection(type, id) {
     ids = [...Player.liked];
     label = "Canciones que te gustan";
   }
-  if (!ids.length) return toast("Esta colección no tiene canciones");
+  if (!ids.length) { toast("Esta colección no tiene canciones"); return; }
   playSong(ids[0], ids, type, id, label);
 }
 
 function shuffleCollection(type, id) {
   let ids = [];
-  if (type === "playlist") ids = [...(DB.playlist(id)?.songIds || [])];
-  else if (type === "album") ids = DB.album(id)?.songs.map(s => s[0]) || [];
-  else if (type === "artist") {
+  let label = "";
+  if (type === "playlist") {
+    const p = DB.playlist(id);
+    ids = [...(p?.songIds || [])];
+    label = p?.name || "";
+  } else if (type === "album") {
+    const a = DB.album(id);
+    ids = a?.songs.map(s => s[0]) || [];
+    label = a?.title || "";
+  } else if (type === "artist") {
+    const a = DB.artist(id);
     const albums = DB.albums.filter(al => al.artistId === id);
     ids = albums.flatMap(al => al.songs.map(s => s[0]));
-  } else if (type === "liked") ids = [...Player.liked];
-  if (!ids.length) return toast("Sin canciones");
+    label = a?.name || "";
+  } else if (type === "liked") {
+    ids = [...Player.liked];
+    label = "Canciones que te gustan";
+  }
+  if (!ids.length) { toast("Sin canciones"); return; }
   const shuffled = [...ids].sort(() => Math.random() - 0.5);
   Player.shuffle = true;
-  playSong(shuffled[0], shuffled, type, id, "");
+  playSong(shuffled[0], shuffled, type, id, label);
 }
 
 /* ─── controls ─── */
 function togglePlay() {
-  if (!Player.song) return toast("Elige una canción primero");
+  if (!Player.song) { toast("Elige una canción primero"); return; }
   Player.playing = !Player.playing;
   dispatchPlayerChange();
 }
@@ -104,7 +165,8 @@ function playNext() {
   if (!Player.queue.length) return;
   let next = Player.index + 1;
   if (next >= Player.queue.length) {
-    if (Player.repeat === "all") next = 0; else { Player.playing = false; dispatchPlayerChange(); return; }
+    if (Player.repeat === "all") next = 0;
+    else { Player.playing = false; dispatchPlayerChange(); return; }
   }
   const song = DB.song(Player.queue[next]);
   if (!song) return;
@@ -167,7 +229,7 @@ function toggleLike(songId) {
 }
 
 function toggleMute() {
-  if (Player.audio.volume > 0) {
+  if (Player.volume > 0) {
     Player._prevVol = Player.volume;
     setVolume(0);
   } else {
@@ -178,10 +240,10 @@ function toggleMute() {
 /* ─── timer ─── */
 let _lastTick = Date.now();
 function tick() {
-  if (!Player.playing || !Player.song) return;
   const now = Date.now();
   const delta = (now - _lastTick) / 1000;
   _lastTick = now;
+  if (!Player.playing || !Player.song) return;
   Player.currentTime = Math.min(Player.currentTime + delta, Player.duration);
   if (Player.currentTime >= Player.duration) {
     if (Player.repeat === "one") Player.currentTime = 0;
@@ -189,9 +251,8 @@ function tick() {
   }
   updateProgressUI();
 }
-setInterval(() => { _lastTick = Date.now(); tick(); }, 250);
 
-/* ─── saved artists ─── */
+/* ─── saved artists / albums ─── */
 function toggleSaveArtist(id) {
   const saved = new Set(Store.get("savedArtists") || []);
   if (saved.has(id)) { saved.delete(id); toast("Dejaste de seguir al artista"); }
@@ -207,3 +268,16 @@ function toggleSaveAlbum(id) {
   Store.set("savedAlbums", [...saved]);
   dispatchPlayerChange();
 }
+
+/* ─── init ─── */
+restorePlayerState();
+Player.audio.volume = Player.volume;
+_lastTick = Date.now();
+setInterval(tick, 250);
+
+// Guarda el avance aunque el usuario no interactúe.
+setInterval(() => { if (Player.song) savePlayerState(); }, 4000);
+window.addEventListener("pagehide", savePlayerState);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") savePlayerState();
+});
