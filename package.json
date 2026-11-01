@@ -1,0 +1,28 @@
+{
+  "name": "spotify-dos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Réplica visual e interactiva de Spotify Web — Proyecto académico RA2, ULagos.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/tailwind.css --watch",
+    "serve": "python3 -m http.server 8080",
+    "build": "npm run build:css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github-segunda:MatiasParedes117/Spotify-dos.git"
+  },
+  "keywords": [
+    "spotify",
+    "tailwindcss",
+    "html",
+    "javascript"
+  ],
+  "author": "Matyaz Paredes",
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

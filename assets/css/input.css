@@ -1,0 +1,29 @@
+/* =====================================================================
+ * Spotify-dos — Entrada de Tailwind CSS 4
+ * Compilar con: npm run build:css
+ * ================================================================== */
+
+@import "tailwindcss";
+
+/* Archivos que Tailwind debe escanear para generar utilidades. */
+@source "../../*.html";
+@source "../js/**/*.js";
+
+/* ─── Design tokens ─── */
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-spotify: #1ed760;
+  --color-spotify-hover: #3be477;
+  --color-spotify-dim: #1db954;
+
+  --color-sp-black: #000000;
+  --color-sp-base: #121212;
+  --color-sp-ink: #181818;
+  --color-sp-surface: #242424;
+  --color-sp-elevated: #282828;
+  --color-sp-subtle: #a7a7a7;
+  --color-sp-faint: #6a6a6a;
+
+  --radius-sp: 12px;
+}

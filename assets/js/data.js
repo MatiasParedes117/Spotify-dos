@@ -2,7 +2,7 @@
  * Spotify-dos — Base de datos simulada
  * ================================================================== */
 
-const IMG = "../Spotify/src/assets/img";
+const IMG = "assets/img";
 
 const DB = {
   artists: [

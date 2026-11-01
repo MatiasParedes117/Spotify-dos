@@ -3,6 +3,10 @@
  * Diseño fiel al Spotify Web Player 2024
  * ================================================================== */
 
+/* Los estilos propios viven en la capa components para que las utilidades
+   de Tailwind puedan sobrescribirlos cuando sea necesario. */
+@layer components {
+
 /* ─── Variables ─── */
 :root {
   --sp-green:       #1ed760;
@@ -689,3 +693,5 @@ input[type=range].sp2-vol:hover {
 .transition-transform { transition: transform .2s cubic-bezier(.4,0,.2,1); }
 .transition-opacity { transition: opacity .15s; }
 .transition-all { transition: all .2s cubic-bezier(.4,0,.2,1); }
+
+} /* @layer components */
